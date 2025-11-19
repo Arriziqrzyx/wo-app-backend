@@ -16,9 +16,6 @@ logs/
 .wwebjs_auth/
 .wwebjs_cache/
 
-# Uploaded files (jangan masuk git)
-uploads/
-
 # Temp files
 .DS_Store
 Thumbs.db
