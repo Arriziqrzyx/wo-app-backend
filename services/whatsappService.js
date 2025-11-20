@@ -5,76 +5,58 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// `whatsapp-web.js` is distributed as CommonJS; default import gives the
-// module object in ESM. Destructure to get Client and LocalAuth. Some older
-// installs may not include LocalAuth, so we fallback gracefully.
 const { Client, LocalAuth } = whatsappPkg;
 
-let client;
-let readyPromise;
+let client = null;
+let readyPromise = null;
 let isResetting = false;
 let lastEvent = { when: null, name: null, info: null };
 
+// 📌 Parent folder — LocalAuth akan otomatis membuat .wwebjs_auth di sini
 const AUTH_DIR = "/var/www/wo-app-backend";
 
 export function initWhatsApp() {
   if (client) return readyPromise;
 
-  const authStrategy =
-    typeof LocalAuth !== "undefined"
-      ? new LocalAuth({
-          dataPath: AUTH_DIR,
-        })
-      : undefined;
-  if (!authStrategy) {
-    console.warn(
-      "LocalAuth not available — WhatsApp session persistence may not work. Install a recent whatsapp-web.js version."
-    );
-  }
+  console.log("🔐 Using LocalAuth at:", AUTH_DIR);
 
-  client = new Client(authStrategy ? { authStrategy } : {});
+  const authStrategy = new LocalAuth({
+    dataPath: AUTH_DIR,
+  });
+
+  client = new Client({
+    authStrategy,
+    puppeteer: {
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    },
+  });
 
   client.on("qr", (qr) => {
-    // Tampilkan QR di console untuk pairing
+    console.log("📲 WhatsApp requires QR scan");
     qrcode.generate(qr, { small: true });
-    console.log("Scan the QR code above with WhatsApp mobile app");
     lastEvent = { when: new Date(), name: "qr", info: null };
   });
 
-  client.on("authenticated", (session) => {
-    console.log("WhatsApp authenticated - session saved");
+  client.on("authenticated", () => {
+    console.log("🔐 WhatsApp authenticated - session stored");
     lastEvent = { when: new Date(), name: "authenticated", info: null };
-  });
-
-  client.on("loading_screen", (percent, message) => {
-    console.log(`WhatsApp loading: ${percent}% - ${message}`);
-    lastEvent = {
-      when: new Date(),
-      name: "loading_screen",
-      info: { percent, message },
-    };
-  });
-
-  client.on("change_state", (state) => {
-    console.log("WhatsApp change_state:", state);
-    lastEvent = { when: new Date(), name: "change_state", info: state };
   });
 
   client.on("ready", () => {
     console.log("✅ WhatsApp client ready");
+    lastEvent = { when: new Date(), name: "ready", info: null };
   });
 
   client.on("auth_failure", (msg) => {
-    console.error("WhatsApp auth failure:", msg);
-    // try to reset session after auth failure so QR appears again
+    console.error("❌ WhatsApp auth failure:", msg);
+    // Jangan hapus folder .wwebjs_auth — cukup reset client saja
     scheduleReset("auth_failure");
-    lastEvent = { when: new Date(), name: "auth_failure", info: msg };
   });
 
   client.on("disconnected", (reason) => {
-    console.warn("WhatsApp disconnected:", reason);
+    console.warn("⚠️ WhatsApp disconnected:", reason);
     scheduleReset("disconnected");
-    lastEvent = { when: new Date(), name: "disconnected", info: reason };
   });
 
   readyPromise = client.initialize();
@@ -91,14 +73,13 @@ export function getWhatsAppStatus() {
 
 function scheduleReset(reason) {
   if (isResetting) return;
-  console.log(`Scheduling WhatsApp reset due to ${reason}`);
   isResetting = true;
-  // wait a bit to allow events to settle, then reset
+
+  console.log(`♻️ Scheduling WhatsApp reset (${reason})`);
+
   setTimeout(async () => {
     try {
       await resetWhatsApp();
-    } catch (err) {
-      console.error("Failed to reset WhatsApp client:", err?.message || err);
     } finally {
       isResetting = false;
     }
@@ -106,53 +87,34 @@ function scheduleReset(reason) {
 }
 
 export async function destroyWhatsApp() {
+  if (!client) return;
+
   try {
-    if (client) {
-      await client.destroy();
-      client = null;
-      readyPromise = null;
-    }
+    console.log("🛑 Destroying WhatsApp client...");
+    await client.destroy();
   } catch (err) {
-    console.warn(
-      "Error while destroying WhatsApp client:",
-      err?.message || err
-    );
+    console.warn("Error destroying client:", err?.message);
   }
+
+  client = null;
+  readyPromise = null;
 }
 
 export async function resetWhatsApp() {
-  // destroy client first
   await destroyWhatsApp();
 
-  // remove local auth folder if present
-  try {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const authDir = AUTH_DIR;
-    await fs.rm(authDir, { recursive: true, force: true });
-    console.log("Removed WhatsApp auth folder:", authDir);
-  } catch (err) {
-    // If file locked, warn and rethrow to let caller decide (or swallow)
-    console.warn(
-      "Failed to remove auth folder (may be locked):",
-      err?.message || err
-    );
-  }
-
-  // reinit client (this will show QR again)
+  // ❗ STOP: Jangan hapus folder .wwebjs_auth — justru itu yg menyimpan sesi login!
+  console.log("♻️ Reinitializing WhatsApp (session preserved)");
   return initWhatsApp();
 }
 
 function normalizePhoneToE164(phone) {
   if (!phone) return null;
-  // keep only digits and plus
+
   let p = phone.replace(/[^0-9+]/g, "");
   if (p.startsWith("+")) p = p.slice(1);
-  // if starts with 0 (local format like 08...), convert to 62
-  if (p.startsWith("0")) {
-    p = "62" + p.slice(1);
-  }
-  // if already starts with 62, keep
+  if (p.startsWith("0")) p = "62" + p.slice(1);
+
   return p;
 }
 
@@ -164,13 +126,12 @@ export async function sendWhatsAppMessage(phone, text) {
 
   const chatId = `${phoneE164}@c.us`;
 
-  // Ensure client ready
   await readyPromise;
 
   try {
     const message = await client.sendMessage(chatId, text);
     return { success: true, result: message, phoneE164 };
   } catch (err) {
-    return { success: false, error: err.message || err, phoneE164 };
+    return { success: false, error: err.message, phoneE164 };
   }
 }
