@@ -15,11 +15,17 @@ let readyPromise;
 let isResetting = false;
 let lastEvent = { when: null, name: null, info: null };
 
+const AUTH_DIR = "/var/www/wo-app-backend/.wwebjs_auth";
+
 export function initWhatsApp() {
   if (client) return readyPromise;
 
   const authStrategy =
-    typeof LocalAuth !== "undefined" ? new LocalAuth() : undefined;
+    typeof LocalAuth !== "undefined"
+      ? new LocalAuth({
+          dataPath: AUTH_DIR,
+        })
+      : undefined;
   if (!authStrategy) {
     console.warn(
       "LocalAuth not available — WhatsApp session persistence may not work. Install a recent whatsapp-web.js version."
@@ -122,7 +128,7 @@ export async function resetWhatsApp() {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const authDir = path.join(__dirname, "..", ".wwebjs_auth");
+    const authDir = AUTH_DIR;
     await fs.rm(authDir, { recursive: true, force: true });
     console.log("Removed WhatsApp auth folder:", authDir);
   } catch (err) {
