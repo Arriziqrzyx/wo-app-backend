@@ -1,9 +1,6 @@
 // services/whatsappService.js
 import whatsappPkg from "whatsapp-web.js";
 import qrcode from "qrcode-terminal";
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const { Client, LocalAuth } = whatsappPkg;
 
@@ -12,8 +9,8 @@ let readyPromise = null;
 let isResetting = false;
 let lastEvent = { when: null, name: null, info: null };
 
-// 📌 Parent folder — LocalAuth akan otomatis membuat .wwebjs_auth di sini
-const AUTH_DIR = "/var/www/wo-app-backend";
+// FIX WAJIB (HANYA INI YANG DIPAKAI)
+const AUTH_DIR = "/home/adminit/.wwebjs";
 
 export function initWhatsApp() {
   if (client) return readyPromise;
@@ -50,7 +47,6 @@ export function initWhatsApp() {
 
   client.on("auth_failure", (msg) => {
     console.error("❌ WhatsApp auth failure:", msg);
-    // Jangan hapus folder .wwebjs_auth — cukup reset client saja
     scheduleReset("auth_failure");
   });
 
@@ -90,7 +86,7 @@ export async function destroyWhatsApp() {
   if (!client) return;
 
   try {
-    console.log("🛑 Destroying WhatsApp client...");
+    console.log("🛑 Destroying WhatsApp client…");
     await client.destroy();
   } catch (err) {
     console.warn("Error destroying client:", err?.message);
@@ -101,9 +97,10 @@ export async function destroyWhatsApp() {
 }
 
 export async function resetWhatsApp() {
+  // ❗ FIX PENTING: Jangan hapus AUTH_DIR
+  // Folder ini menyimpan sesi WA. Kalau dihapus → QR ulang.
   await destroyWhatsApp();
 
-  // ❗ STOP: Jangan hapus folder .wwebjs_auth — justru itu yg menyimpan sesi login!
   console.log("♻️ Reinitializing WhatsApp (session preserved)");
   return initWhatsApp();
 }
