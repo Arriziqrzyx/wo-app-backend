@@ -10,7 +10,7 @@ let isResetting = false;
 let lastEvent = { when: null, name: null, info: null };
 
 // FIX WAJIB (HANYA INI YANG DIPAKAI)
-const AUTH_DIR = "/home/adminit/.wwebjs";
+const AUTH_DIR = "/var/www/wo-app-backend/session";
 
 export function initWhatsApp() {
   if (client) return readyPromise;
