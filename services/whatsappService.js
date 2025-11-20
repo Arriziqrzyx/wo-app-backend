@@ -15,7 +15,7 @@ let readyPromise;
 let isResetting = false;
 let lastEvent = { when: null, name: null, info: null };
 
-const AUTH_DIR = "/var/www/wo-app-backend/.wwebjs_auth";
+const AUTH_DIR = "/var/www/wo-app-backend";
 
 export function initWhatsApp() {
   if (client) return readyPromise;
