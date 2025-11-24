@@ -96,7 +96,8 @@ workOrderSchema.pre("save", async function (next) {
   );
 
   const padded = String(counter.seq).padStart(3, "0");
-  this.woNumber = `WO/${padded}/${this.organization}/${requesterDept.code}`;
+  // this.woNumber = `WO/${padded}/${this.organization}/${requesterDept.code}`;
+  this.woNumber = `WO/${this.organization}/${requesterDept.code}/${padded}`;
   next();
 });
 
