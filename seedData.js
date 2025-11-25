@@ -14,26 +14,46 @@ const organizations = ["YPP", "GD", "EEE"];
 
 // 🔧 ubah: sekarang field `staff` bisa array
 const departmentTemplates = [
-  { name: "Marketing", code: "MKT", spv: "Ana", staff: ["Nisa", "Nindy"] },
+  {
+    name: "Marketing",
+    code: "MKT",
+    spv: "Ana",
+    staff: ["Nisa", "Nindy", "Claudia"],
+  },
   {
     name: "Purchasing",
     code: "PCH",
     spv: "John",
-    staff: ["Eka", "Siska", "Agriva"],
+    staff: ["Eka", "Siska", "Agriva", "Tomi", "Almi"],
   },
   {
     name: "Finance",
     code: "FIN",
     spv: "Yuni",
-    staff: ["Indri", "Pipit", "Agela"],
+    staff: ["Indri", "Pipit", "Agela", "Akhsan"],
   },
-  { name: "Logistics", code: "LOG", spv: "Yitno", staff: ["Sofyan"] },
-  { name: "IT", code: "IT", spv: "Hendi", staff: ["Rojak", "Rojok", "Rijik"] },
-  { name: "GA", code: "GA", spv: "Hendi", staff: ["Tio"] },
+  {
+    name: "Logistics",
+    code: "LOG",
+    spv: "Yitno",
+    staff: ["Sofyan", "Kelik", "Yayan", "Tantowi", "Yatimanto", "Nata"],
+  },
+  {
+    name: "IT",
+    code: "IT",
+    spv: "Hendi",
+    staff: ["Arriziq"],
+  },
+  { name: "GA", code: "GA", spv: "Hendi", staff: ["Tio", "Alex"] },
   { name: "HRD", code: "HRD", spv: "Hendi", staff: ["Amri"] },
-  { name: "LEGAL", code: "LGL", spv: "Hendi", staff: ["Bram"] },
+  { name: "LEGAL", code: "LGL", spv: "Hendi", staff: ["Abraham"] },
   { name: "HSE", code: "HSE", spv: "Alwi", staff: ["Sultan"] },
-  { name: "Project", code: "PRJ", spv: "Syamsul", staff: ["Fatimah"] },
+  {
+    name: "Project",
+    code: "PRJ",
+    spv: "Syamsul",
+    staff: ["Fatimah", "Uung", "Cahyo", "Vino"],
+  },
   { name: "Workshop", code: "WSP", spv: "Masudin", staff: ["Gunawan"] },
 ];
 
@@ -45,7 +65,7 @@ const findOrCreateUser = async ({ name, role }) => {
   let user = await User.findOne({ email });
   if (user) return user;
 
-  const hashed = await bcrypt.hash("123456", 10);
+  const hashed = await bcrypt.hash("1234", 10);
   user = await User.create({
     name,
     email,
