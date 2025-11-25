@@ -17,9 +17,9 @@ export const login = async (req, res) => {
 
     // 3️⃣ Cek apakah user tergabung di organisasi yg diminta
     if (organization && !user.organizations.includes(organization)) {
-      return res
-        .status(403)
-        .json({ message: `User tidak tergabung di organisasi ${organization}` });
+      return res.status(403).json({
+        message: `User tidak tergabung di organisasi ${organization}`,
+      });
     }
 
     // 4️⃣ Tentukan organisasi aktif
@@ -36,7 +36,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, name: user.name, role: user.role, activeOrganization },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "90d" }
     );
 
     res.json({
@@ -62,7 +62,6 @@ export const login = async (req, res) => {
   }
 };
 
-
 export const switchOrganization = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -74,7 +73,9 @@ export const switchOrganization = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user.organizations.includes(organization)) {
-      return res.status(403).json({ message: "You are not part of this organization" });
+      return res
+        .status(403)
+        .json({ message: "You are not part of this organization" });
     }
 
     // Update preferred org

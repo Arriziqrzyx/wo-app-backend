@@ -65,7 +65,7 @@ const findOrCreateUser = async ({ name, role }) => {
   let user = await User.findOne({ email });
   if (user) return user;
 
-  const hashed = await bcrypt.hash("1234", 10);
+  const hashed = await bcrypt.hash("Alpacino@25", 10);
   user = await User.create({
     name,
     email,
